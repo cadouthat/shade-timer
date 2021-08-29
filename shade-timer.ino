@@ -1,14 +1,17 @@
-#define CHAIN_PULL_PIN 2
+#define CHAIN_PULL_PIN 14
 
 void toggleShade() {
-  digitalWrite(CHAIN_PULL_PIN, HIGH);
-  delay(500);
   digitalWrite(CHAIN_PULL_PIN, LOW);
+  delay(500);
+  digitalWrite(CHAIN_PULL_PIN, HIGH);
 }
 
 void setup() {
-  pinMode(CHAIN_PULL_PIN, OUTPUT);
-  digitalWrite(CHAIN_PULL_PIN, LOW);
+  digitalWrite(CHAIN_PULL_PIN, HIGH);
+  pinMode(CHAIN_PULL_PIN, OUTPUT_OPEN_DRAIN);
+
+  Serial.begin(115200);
+  delay(500);
 
   toggleShade();
 }
