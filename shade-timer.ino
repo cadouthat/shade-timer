@@ -43,6 +43,7 @@ void setup() {
 
   Serial.begin(SERIAL_BAUD);
   delay(500);
+  Serial.println();
 
   uint16_t schedule_m[kScheduleMaxEvents] = {0};
   EEPROM.begin(kWiFiConfigSize + sizeof(schedule_m));
