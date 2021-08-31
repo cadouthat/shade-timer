@@ -26,13 +26,13 @@ void toggleShade() {
   digitalWrite(CHAIN_PULL_PIN, HIGH);
 }
 
-int minutesUntil(int minute_in_day, int target) {
-  target -= minute_in_day;
+int minutesUntil(int target_m, int current_m) {
+  target_m -= current_m;
   // Wrap to the next day.
-  if (target < 0) {
-    target += kMinutesPerDay;
+  if (target_m < 0) {
+    target_m += kMinutesPerDay;
   }
-  return target;
+  return target_m;
 }
 
 void setup() {
@@ -81,17 +81,16 @@ void setup() {
   // schedule updates.
   int wait_s = kSecondsPerHour;
   if (next_event_m != kScheduleNoEvent) {
-    wait_s = minutesUntil(minute_in_day, next_event_m) * 60;
+    wait_s = minutesUntil(next_event_m, minute_in_day) * kSecondsPerMinute;
     if (wait_s > kSecondsPerHour) {
       wait_s = kSecondsPerHour;
     }
   }
-  // Unnecessary precaution to avoid sleeping forever.
-  if (wait_s < 1) {
-    wait_s = 1;
-  }
-  // Necessary precaution to avoid sleeping forever.
   uint64_t wait_us = wait_s * kMicros;
+  // Make sure to avoid sleeping forever.
+  if (wait_us < 1) {
+    wait_us = 1;
+  }
   if (wait_us > ESP.deepSleepMax()) {
     wait_us = ESP.deepSleepMax();
   }
