@@ -118,7 +118,7 @@ void loop() {
 
   if (!rtc.countdown(wait_minutes)) {
     Serial.println("Failed to start timer!");
-    delay(min_wait_minutes * 1000);
+    delay(min_wait_minutes * kSecondsPerMinute * 1000);
     return;
   }
   Serial.println("Calling deepSleep");
