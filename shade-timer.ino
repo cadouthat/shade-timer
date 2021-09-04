@@ -4,6 +4,7 @@
 
 #include "src/eeprom-wifi.h"
 #include "src/ds3231rtc.h"
+#include "src/schedule-client.h"
 
 #define CHAIN_PULL_PIN 13
 #define SERIAL_BAUD 115200
@@ -13,7 +14,6 @@ constexpr int kSecondsPerDay = kSecondsPerMinute * 60 * 24;
 constexpr int kMinutesPerDay = 60 * 24;
 
 constexpr int kScheduleMaxEvents = 2;
-constexpr uint16_t kScheduleNoEvent = 0xFFFF;
 constexpr int kScheduleTriggerDeltaMinutes = 5;
 // Wake up and check for schedule changes at least once per hour.
 constexpr uint16_t kMaxWaitMinutes = 60;
@@ -64,10 +64,23 @@ void setup() {
 
   EEPROM.begin(kWiFiConfigSize + sizeof(schedule_in_minutes));
   initEEPROMWiFi();
-  // TODO: Load schedule from server
-  // TODO: Load back up schedule from EEPROM
-  schedule_in_minutes[0] = 2 * 60; // 02:00 UTC -> 19:00 PDT
-  schedule_in_minutes[1] = 16 * 60; // 16:00 UTC -> 09:00 PDT
+  // Try to fetch the schedule from our server.
+  if (fetchSchedule(schedule_in_minutes, kScheduleMaxEvents)) {
+    // Write latest schedule to EEPROM, behind WiFi config.
+    EEPROM.put(kWifiConfigSize, schedule_in_minutes);
+    // Commit only writes to flash if the data has actually changed.
+    EEPROM.commit();
+  } else {
+    // Read last known schedule from EEPROM.
+    EEPROM.get(kWifiConfigSize, schedule_in_minutes);
+  }
+  Serial.println("Loaded schedule:");
+  for (int i = 0;
+      i < kScheduleMaxEvents && schedule[i] != kScheduleNoEvent; i++) {
+    Serial.print(schedule[i] / 60);
+    Serial.print(":");
+    Serial.println(schedule[i] % 60);
+  }
 
   ntp.begin();
   rtc.begin();
