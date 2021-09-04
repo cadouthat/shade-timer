@@ -1,5 +1,8 @@
 #include "schedule-client.h"
 
+#include <string.h>
+#include <stdio.h>
+
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 

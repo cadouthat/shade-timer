@@ -67,19 +67,20 @@ void setup() {
   // Try to fetch the schedule from our server.
   if (fetchSchedule(schedule_in_minutes, kScheduleMaxEvents)) {
     // Write latest schedule to EEPROM, behind WiFi config.
-    EEPROM.put(kWifiConfigSize, schedule_in_minutes);
+    EEPROM.put(kWiFiConfigSize, schedule_in_minutes);
     // Commit only writes to flash if the data has actually changed.
     EEPROM.commit();
   } else {
     // Read last known schedule from EEPROM.
-    EEPROM.get(kWifiConfigSize, schedule_in_minutes);
+    EEPROM.get(kWiFiConfigSize, schedule_in_minutes);
   }
   Serial.println("Loaded schedule:");
   for (int i = 0;
-      i < kScheduleMaxEvents && schedule[i] != kScheduleNoEvent; i++) {
-    Serial.print(schedule[i] / 60);
+      i < kScheduleMaxEvents && schedule_in_minutes[i] != kScheduleNoEvent;
+      i++) {
+    Serial.print(schedule_in_minutes[i] / 60);
     Serial.print(":");
-    Serial.println(schedule[i] % 60);
+    Serial.println(schedule_in_minutes[i] % 60);
   }
 
   ntp.begin();
