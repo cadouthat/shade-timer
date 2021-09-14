@@ -15,8 +15,8 @@ constexpr int kMinutesPerDay = 60 * 24;
 
 constexpr int kScheduleMaxEvents = 2;
 constexpr int kScheduleTriggerDeltaMinutes = 5;
-// Wake up and check for schedule changes at least once per hour.
-constexpr uint16_t kMaxWaitMinutes = 60;
+// Wake up and check for schedule changes at least every 4 hours.
+constexpr uint16_t kMaxWaitMinutes = 240;
 
 WiFiUDP ntpUDP;
 NTPClient ntp(ntpUDP);
