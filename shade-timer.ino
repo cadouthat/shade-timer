@@ -106,7 +106,7 @@ void loop() {
     // Trigger any event within the time delta.
     if (int delta_minutes =
           nearestMinutes(schedule_in_minutes[i], minute_in_day);
-        delta_minutes <= kScheduleTriggerDeltaMinutes) {
+        abs(delta_minutes) <= kScheduleTriggerDeltaMinutes) {
       toggleShade();
       // Need to wait at least enough time to avoid duplicate triggers.
       min_wait_minutes = delta_minutes + kScheduleTriggerDeltaMinutes + 1;
