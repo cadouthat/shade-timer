@@ -6,10 +6,12 @@
 class DS3231RTC {
  public:
   void begin();
-  // Triggers an interrupt after the specified duration in minutes.
-  // Warning: The duration must be less than 28 days. To avoid repeat triggers,
-  // this countdown must be replaced or cleared within 28 days of expiration.
+  // Starts a countdown for the specified duration, in minutes.
+  // Warning: The duration must be less than 28 days.
   bool countdown(uint16_t duration_minutes);
+  // Returns the remaining minutes in the countdown, or zero if the countdown
+  // has ended.
+  uint16_t remainingMinutes();
 };
 
 #endif

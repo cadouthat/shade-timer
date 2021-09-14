@@ -21,10 +21,13 @@
 constexpr int kSecondsPerMinute = 60;
 constexpr int kSecondsPerDay = kSecondsPerMinute * 60 * 24;
 constexpr int kMinutesPerDay = 60 * 24;
+constexpr int kMicros = 1e6;
 
 constexpr int kScheduleMaxEvents = 2;
 constexpr int kScheduleTriggerDeltaMinutes = 5;
-// Wake up and check for schedule changes at least every 4 hours.
+// Only go into deep sleep for short durations, to retain accuracy.
+constexpr int kMaxDeepSleepMinutes = 15;
+// Check for schedule changes at least every 4 hours.
 constexpr uint16_t kMaxWaitMinutes = 240;
 
 WiFiUDP ntpUDP;
@@ -37,6 +40,13 @@ void toggleShade() {
   digitalWrite(CHAIN_PULL_PIN, LOW);
   delay(500);
   digitalWrite(CHAIN_PULL_PIN, HIGH);
+}
+
+void deepSleepMinutes(uint64_t minutes) {
+  DBG(F("Going into deepSleep for "));
+  DBG(minutes);
+  DBGLN(F(" minutes"));
+  ESP.deepSleep(minutes * kSecondsPerMinute * kMicros);
 }
 
 int minutesUntil(int target_minute, int current_minute) {
@@ -61,16 +71,21 @@ int nearestMinutes(int target_minute, int current_minute) {
 }
 
 void setup() {
-  digitalWrite(LED_BUILTIN, HIGH);
-  pinMode(LED_BUILTIN, OUTPUT);
-
   digitalWrite(CHAIN_PULL_PIN, HIGH);
   pinMode(CHAIN_PULL_PIN, OUTPUT_OPEN_DRAIN);
 
   Serial.begin(SERIAL_BAUD);
   delay(500);
   DBGLN();
-  DBGLN("Awake");
+  DBGLN(F("Awake"));
+
+  rtc.begin();
+  if (int minutes = rtc.remainingMinutes(); minutes > 0) {
+    DBG(F("Countdown still has "));
+    DBG(minutes);
+    DBGLN(F(" minutes"));
+    deepSleepMinutes(min(minutes, kMaxDeepSleepMinutes));
+  }
 
   EEPROM.begin(kWiFiConfigSize + sizeof(schedule_in_minutes));
   initEEPROMWiFi();
@@ -84,7 +99,7 @@ void setup() {
     // Read last known schedule from EEPROM.
     EEPROM.get(kWiFiConfigSize, schedule_in_minutes);
   }
-  DBGLN("Loaded schedule:");
+  DBGLN(F("Loaded schedule:"));
   for (int i = 0;
       i < kScheduleMaxEvents && schedule_in_minutes[i] != kScheduleNoEvent;
       i++) {
@@ -94,7 +109,6 @@ void setup() {
   }
 
   ntp.begin();
-  rtc.begin();
 }
 
 void loop() {
@@ -140,15 +154,14 @@ void loop() {
     wait_minutes = min_wait_minutes;
   }
 
-  DBG("Starting timer for ");
+  DBG(F("Starting timer for "));
   DBG(wait_minutes);
-  DBGLN(" minutes");
+  DBGLN(F(" minutes"));
   if (!rtc.countdown(wait_minutes)) {
-    DBGLN("Failed to start timer!");
+    DBGLN(F("Failed to start timer!"));
     delay(min_wait_minutes * kSecondsPerMinute * 1000);
     return;
   }
-  DBGLN("Calling deepSleep");
-  // Sleep until external reset from RTC.
-  ESP.deepSleep(0);
+  // Sleep as long as possible, or until the countdown ends.
+  deepSleepMinutes(min(wait_minutes, kMaxDeepSleepMinutes));
 }
