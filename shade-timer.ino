@@ -115,17 +115,12 @@ void loop() {
   ntp.update();
   int minute_in_day =
     (ntp.getEpochTime() % kSecondsPerDay) / kSecondsPerMinute;
-  uint16_t event_minute = kScheduleNoEvent;
+  int wait_minutes = kMaxWaitMinutes;
   int min_wait_minutes = 1;
   for (int i = 0; i < kScheduleMaxEvents; i++) {
     // If the schedule is not full, remaining slots are kScheduleNoEvent.
     if (schedule_in_minutes[i] == kScheduleNoEvent) {
       break;
-    }
-    // The first event at a later time of day is up next.
-    if (schedule_in_minutes[i] > minute_in_day
-        && event_minute == kScheduleNoEvent) {
-      event_minute = schedule_in_minutes[i];
     }
     // Trigger any event within the time delta.
     if (int delta_minutes =
@@ -133,22 +128,15 @@ void loop() {
         abs(delta_minutes) <= kScheduleTriggerDeltaMinutes) {
       toggleShade();
       // Need to wait at least enough time to avoid duplicate triggers.
-      min_wait_minutes = delta_minutes + kScheduleTriggerDeltaMinutes + 1;
+      min_wait_minutes =
+        max(min_wait_minutes, delta_minutes + kScheduleTriggerDeltaMinutes + 1);
+      continue;
     }
-  }
-  // When there are no events at a later time of day, the first event on the
-  // schedule is up next.
-  if (event_minute == kScheduleNoEvent) {
-    event_minute = schedule_in_minutes[0];
-  }
-
-  // Sleep until the next event, within limits.
-  int wait_minutes = kMaxWaitMinutes;
-  if (event_minute != kScheduleNoEvent) {
-    wait_minutes = minutesUntil(event_minute, minute_in_day);
-  }
-  if (wait_minutes > kMaxWaitMinutes) {
-    wait_minutes = kMaxWaitMinutes;
+    // Find the soonest upcoming event.
+    if (int minutes_until = minutesUntil(schedule_in_minutes[i], minute_in_day);
+          minutes_until < wait_minutes) {
+      wait_minutes = minutes_until;
+    }
   }
   if (wait_minutes < min_wait_minutes) {
     wait_minutes = min_wait_minutes;
@@ -159,6 +147,7 @@ void loop() {
   DBGLN(F(" minutes"));
   if (!rtc.countdown(wait_minutes)) {
     DBGLN(F("Failed to start timer!"));
+    // Try again after the minimum wait period.
     delay(min_wait_minutes * kSecondsPerMinute * 1000);
     return;
   }
