@@ -9,6 +9,15 @@
 #define CHAIN_PULL_PIN 13
 #define SERIAL_BAUD 115200
 
+// Enable/disable debugging print statements.
+#if true
+#define DBGLN(v) Serial.println(v)
+#define DBG(v) Serial.print(v)
+#else
+#define DBGLN(v)
+#define DBG(v)
+#endif
+
 constexpr int kSecondsPerMinute = 60;
 constexpr int kSecondsPerDay = kSecondsPerMinute * 60 * 24;
 constexpr int kMinutesPerDay = 60 * 24;
@@ -24,6 +33,7 @@ DS3231RTC rtc;
 uint16_t schedule_in_minutes[kScheduleMaxEvents] = {0};
 
 void toggleShade() {
+  DBGLN("toggleShade() called");
   digitalWrite(CHAIN_PULL_PIN, LOW);
   delay(500);
   digitalWrite(CHAIN_PULL_PIN, HIGH);
@@ -59,8 +69,8 @@ void setup() {
 
   Serial.begin(SERIAL_BAUD);
   delay(500);
-  Serial.println();
-  Serial.println("Awake");
+  DBGLN();
+  DBGLN("Awake");
 
   EEPROM.begin(kWiFiConfigSize + sizeof(schedule_in_minutes));
   initEEPROMWiFi();
@@ -74,13 +84,13 @@ void setup() {
     // Read last known schedule from EEPROM.
     EEPROM.get(kWiFiConfigSize, schedule_in_minutes);
   }
-  Serial.println("Loaded schedule:");
+  DBGLN("Loaded schedule:");
   for (int i = 0;
       i < kScheduleMaxEvents && schedule_in_minutes[i] != kScheduleNoEvent;
       i++) {
-    Serial.print(schedule_in_minutes[i] / 60);
-    Serial.print(":");
-    Serial.println(schedule_in_minutes[i] % 60);
+    DBG(schedule_in_minutes[i] / 60);
+    DBG(":");
+    DBGLN(schedule_in_minutes[i] % 60);
   }
 
   ntp.begin();
@@ -130,12 +140,15 @@ void loop() {
     wait_minutes = min_wait_minutes;
   }
 
+  DBG("Starting timer for ");
+  DBG(wait_minutes);
+  DBGLN(" minutes");
   if (!rtc.countdown(wait_minutes)) {
-    Serial.println("Failed to start timer!");
+    DBGLN("Failed to start timer!");
     delay(min_wait_minutes * kSecondsPerMinute * 1000);
     return;
   }
-  Serial.println("Calling deepSleep");
+  DBGLN("Calling deepSleep");
   // Sleep until external reset from RTC.
   ESP.deepSleep(0);
 }
