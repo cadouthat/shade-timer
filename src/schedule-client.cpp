@@ -42,6 +42,10 @@ bool fetchSchedule(uint16_t* output_minutes, int size) {
     scan += strlen(line);
     if (*scan == '\n') scan++;
   }
+  if (*scan) {
+    Serial.println(F("fetchSchedule event overflow"));
+    return false;
+  }
   if (count < size) {
     // Special value to indicate early end of schedule.
     output_minutes[count] = kScheduleNoEvent;
