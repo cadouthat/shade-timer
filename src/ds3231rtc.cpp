@@ -61,7 +61,7 @@ void DS3231RTC::begin() {
 }
 
 bool DS3231RTC::isTimeValid() {
-  return getStatusFlag(DS3231_OSF_FLAG);
+  return !getStatusFlag(DS3231_OSF_FLAG);
 }
 int DS3231RTC::getMinuteOfDay() {
   Wire.beginTransmission(DS3231_ADDRESS);
