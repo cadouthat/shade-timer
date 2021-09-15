@@ -160,9 +160,9 @@ void loop() {
     wait_minutes = min_wait_minutes;
   }
 
-  DBG(F("Setting alarm minutes "));
+  DBG(F("Setting alarm minutes from now "));
   DBGLN(wait_minutes);
-  if (!rtc.setMinuteOfDayAlarm(wait_minutes)) {
+  if (!rtc.setMinuteOfDayAlarm(minute_of_day + wait_minutes)) {
     DBGLN(F("Failed to set alarm!"));
     // Try again after the minimum wait period.
     delay(min_wait_minutes * kSecondsPerMinute * 1000);
