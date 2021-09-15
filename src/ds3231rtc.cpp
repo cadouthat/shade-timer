@@ -6,17 +6,17 @@
 #include <Wire.h>
 
 namespace {
-constexpr uint16_t kMinutesPerHour = 60;
-constexpr uint16_t kHoursPerDay = 24;
-constexpr uint8_t kMinDaysPerMonth = 28;
+
+constexpr int kMinutesPerHour = 60;
 
 constexpr uint8_t DS3231_ADDRESS = 0x68;
 constexpr uint8_t DS3231_TIME = 0x00;
 constexpr uint8_t DS3231_ALARM1 = 0x07;
 constexpr uint8_t DS3231_STATUS = 0x0F;
 
+constexpr uint8_t DS3231_ALARM_MASK = bit(7);
+constexpr uint8_t DS3231_OSF_FLAG = bit(7);
 constexpr uint8_t DS3231_ALARM1_FLAG = bit(0);
-constexpr uint8_t DS3231_STATUS_DEFAULT = bit(3);
 
 uint8_t binToBCD(uint8_t bin) {
   return (bin / 10 << 4) | (bin % 10);
@@ -41,78 +41,17 @@ bool write(uint8_t write_register, uint8_t value) {
   return Wire.endTransmission() == 0;
 }
 
-bool resetTime() {
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire.write(DS3231_TIME);
-  Wire.write(0); // Second
-  Wire.write(0); // Minute
-  Wire.write(0); // Hour
-  Wire.write(1); // Weekday (ignored)
-  Wire.write(1); // Day of month
-  Wire.write(1); // Month/century
-  Wire.write(0); // Year
-  return Wire.endTransmission() == 0;
+bool getStatusFlag(uint8_t flag) {
+  return read(DS3231_STATUS) & flag;
 }
 
-bool getAlarmFlag() {
-  return (read(DS3231_STATUS) & DS3231_ALARM1_FLAG) > 0;
+bool clearStatusFlag(uint8_t flag) {
+  uint8_t status = read(DS3231_STATUS);
+  return write(DS3231_STATUS, status & ~flag);
 }
 
-bool resetAlarm() {
-  return write(DS3231_STATUS, DS3231_STATUS_DEFAULT);
-}
-
-bool setAlarmTime(uint16_t duration) {
-  uint8_t minutes = duration % kMinutesPerHour;
-  duration /= kMinutesPerHour;
-  uint8_t hours = duration % kHoursPerDay;
-  duration /= kHoursPerDay;
-  if (duration >= kMinDaysPerMonth) {
-    return false;
-  }
-  uint8_t days = duration;
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire.write(DS3231_ALARM1);
-  Wire.write(0); // Second
-  Wire.write(binToBCD(minutes)); // Minute
-  Wire.write(binToBCD(hours)); // Hour
-  Wire.write(binToBCD(days + 1)); // Day of month
-  return Wire.endTransmission() == 0;
-}
-
-uint16_t convertToMinutes(
-    uint8_t day_of_month, uint8_t hour, uint8_t minute) {
-  uint16_t minutes = day_of_month;
-  minutes *= kHoursPerDay;
-  minutes += hour;
-  minutes *= kMinutesPerHour;
-  minutes += minute;
-  return minutes;
-}
-
-uint16_t getAlarmTime() {
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire.write(DS3231_ALARM1);
-  Wire.endTransmission();
-  Wire.requestFrom(DS3231_ADDRESS, 4);
-  Wire.read(); // Ignore seconds
-  uint8_t minute = BCDToBin(Wire.read());
-  uint8_t hour = BCDToBin(Wire.read());
-  uint8_t day_of_month = BCDToBin(Wire.read());
-  return convertToMinutes(day_of_month, hour, minute);
-}
-
-uint16_t getTime() {
-  Wire.beginTransmission(DS3231_ADDRESS);
-  Wire.write(DS3231_TIME);
-  Wire.endTransmission();
-  Wire.requestFrom(DS3231_ADDRESS, 5);
-  Wire.read(); // Ignore seconds.
-  uint8_t minute = BCDToBin(Wire.read());
-  uint8_t hour = BCDToBin(Wire.read());
-  Wire.read(); // Ignore day of week.
-  uint8_t day_of_month = BCDToBin(Wire.read());
-  return convertToMinutes(day_of_month, hour, minute);
+int minuteOfDay(int hour, int minute) {
+  return hour * kMinutesPerHour + minute;
 }
 
 } // namespace
@@ -121,16 +60,61 @@ void DS3231RTC::begin() {
   Wire.begin();
 }
 
-bool DS3231RTC::countdown(uint16_t duration_minutes) {
-  if (!resetTime()) return false;
-  if (!setAlarmTime(duration_minutes)) return false;
-  return resetAlarm();
+bool DS3231RTC::isTimeValid() {
+  return getStatusFlag(DS3231_OSF_FLAG);
+}
+int DS3231RTC::getMinuteOfDay() {
+  Wire.beginTransmission(DS3231_ADDRESS);
+  Wire.write(DS3231_TIME);
+  Wire.endTransmission();
+  Wire.requestFrom(DS3231_ADDRESS, 3);
+  Wire.read(); // Ignore seconds.
+  uint8_t minute = BCDToBin(Wire.read());
+  uint8_t hour = BCDToBin(Wire.read());
+  return minuteOfDay(hour, minute);
+}
+bool DS3231RTC::setMinuteOfDay(int minute_of_day) {
+  uint8_t minute = minute_of_day % kMinutesPerHour;
+  uint8_t hour = minute_of_day / kMinutesPerHour;
+  Wire.beginTransmission(DS3231_ADDRESS);
+  Wire.write(DS3231_TIME);
+  Wire.write(0); // Second
+  Wire.write(binToBCD(minute)); // Minute
+  Wire.write(binToBCD(hour)); // Hour
+  Wire.write(1); // Day of week
+  Wire.write(1); // Day of month
+  Wire.write(1); // Month/century
+  Wire.write(0); // Year
+  if (Wire.endTransmission() != 0) {
+    return false;
+  }
+  return clearStatusFlag(DS3231_OSF_FLAG);
 }
 
-uint16_t DS3231RTC::remainingMinutes() {
-  if (getAlarmFlag()) return 0;
-  uint16_t time = getTime();
-  uint16_t alarm = getAlarmTime();
-  if (time >= alarm) return 0;
-  return alarm - time;
+bool DS3231RTC::isAlarmActive() {
+  return getStatusFlag(DS3231_ALARM1_FLAG);
+}
+int DS3231RTC::getMinuteOfDayAlarm() {
+  Wire.beginTransmission(DS3231_ADDRESS);
+  Wire.write(DS3231_ALARM1);
+  Wire.endTransmission();
+  Wire.requestFrom(DS3231_ADDRESS, 3);
+  Wire.read(); // Ignore seconds.
+  uint8_t minute = BCDToBin(Wire.read());
+  uint8_t hour = BCDToBin(Wire.read());
+  return minuteOfDay(hour, minute);
+}
+bool DS3231RTC::setMinuteOfDayAlarm(int minute_of_day) {
+  uint8_t minute = minute_of_day % kMinutesPerHour;
+  uint8_t hour = minute_of_day / kMinutesPerHour;
+  Wire.beginTransmission(DS3231_ADDRESS);
+  Wire.write(DS3231_ALARM1);
+  Wire.write(0); // Second
+  Wire.write(binToBCD(minute)); // Minute
+  Wire.write(binToBCD(hour)); // Hour
+  Wire.write(DS3231_ALARM_MASK); // Day of month (ignored)
+  if (Wire.endTransmission() != 0) {
+    return false;
+  }
+  return clearStatusFlag(DS3231_ALARM1);
 }

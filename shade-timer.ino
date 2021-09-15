@@ -36,14 +36,14 @@ DS3231RTC rtc;
 uint16_t schedule_in_minutes[kScheduleMaxEvents] = {0};
 
 void toggleShade() {
-  DBGLN("toggleShade() called");
+  DBGLN(F("toggleShade() called"));
   digitalWrite(CHAIN_PULL_PIN, LOW);
   delay(500);
   digitalWrite(CHAIN_PULL_PIN, HIGH);
 }
 
 void deepSleepMinutes(uint64_t minutes) {
-  DBG(F("Going into deepSleep for "));
+  DBG(F("Going into deepSleep() for "));
   DBG(minutes);
   DBGLN(F(" minutes"));
   ESP.deepSleep(minutes * kSecondsPerMinute * kMicros);
@@ -70,21 +70,36 @@ int nearestMinutes(int target_minute, int current_minute) {
   return target_minute;
 }
 
+bool initTime() {
+  if (!ntp.update()) {
+    return false;
+  }
+  int minute_of_day =
+    (ntp.getEpochTime() % kSecondsPerDay) / kSecondsPerMinute;
+  DBG(F("initTime() at minute "));
+  DBGLN(minute_of_day);
+  return rtc.setMinuteOfDay(minute_of_day);
+}
+
 void setup() {
   digitalWrite(CHAIN_PULL_PIN, HIGH);
   pinMode(CHAIN_PULL_PIN, OUTPUT_OPEN_DRAIN);
+  ntp.begin();
+  rtc.begin();
 
   Serial.begin(SERIAL_BAUD);
   delay(500);
   DBGLN();
   DBGLN(F("Awake"));
 
-  rtc.begin();
-  if (int minutes = rtc.remainingMinutes(); minutes > 0) {
-    DBG(F("Countdown still has "));
-    DBG(minutes);
-    DBGLN(F(" minutes"));
-    deepSleepMinutes(min(minutes, kMaxDeepSleepMinutes));
+  if (rtc.isTimeValid() && !rtc.isAlarmActive()) {
+    if (int minutes =
+          minutesUntil(rtc.getMinuteOfDayAlarm(), rtc.getMinuteOfDay());
+        minutes > 0) {
+      DBG(F("Alarm minutes remaining: "));
+      DBGLN(minutes);
+      deepSleepMinutes(min(minutes, kMaxDeepSleepMinutes));
+    }
   }
 
   EEPROM.begin(kWiFiConfigSize + sizeof(schedule_in_minutes));
@@ -104,17 +119,20 @@ void setup() {
       i < kScheduleMaxEvents && schedule_in_minutes[i] != kScheduleNoEvent;
       i++) {
     DBG(schedule_in_minutes[i] / 60);
-    DBG(":");
+    DBG(F(":"));
     DBGLN(schedule_in_minutes[i] % 60);
   }
-
-  ntp.begin();
 }
 
 void loop() {
-  ntp.update();
-  int minute_in_day =
-    (ntp.getEpochTime() % kSecondsPerDay) / kSecondsPerMinute;
+  if (!rtc.isTimeValid() && !initTime()) {
+    DBGLN(F("Failed to initTime()!"));
+    delay(1000);
+    return;
+  }
+  int minute_of_day = rtc.getMinuteOfDay();
+  DBG(F("loop() at minute "));
+  DBGLN(minute_of_day);
   int wait_minutes = kMaxWaitMinutes;
   int min_wait_minutes = 1;
   for (int i = 0; i < kScheduleMaxEvents; i++) {
@@ -124,7 +142,7 @@ void loop() {
     }
     // Trigger any event within the time delta.
     if (int delta_minutes =
-          nearestMinutes(schedule_in_minutes[i], minute_in_day);
+          nearestMinutes(schedule_in_minutes[i], minute_of_day);
         abs(delta_minutes) <= kScheduleTriggerDeltaMinutes) {
       toggleShade();
       // Need to wait at least enough time to avoid duplicate triggers.
@@ -133,7 +151,7 @@ void loop() {
       continue;
     }
     // Find the soonest upcoming event.
-    if (int minutes_until = minutesUntil(schedule_in_minutes[i], minute_in_day);
+    if (int minutes_until = minutesUntil(schedule_in_minutes[i], minute_of_day);
           minutes_until < wait_minutes) {
       wait_minutes = minutes_until;
     }
@@ -142,11 +160,10 @@ void loop() {
     wait_minutes = min_wait_minutes;
   }
 
-  DBG(F("Starting timer for "));
-  DBG(wait_minutes);
-  DBGLN(F(" minutes"));
-  if (!rtc.countdown(wait_minutes)) {
-    DBGLN(F("Failed to start timer!"));
+  DBG(F("Setting alarm minutes "));
+  DBGLN(wait_minutes);
+  if (!rtc.setMinuteOfDayAlarm(wait_minutes)) {
+    DBGLN(F("Failed to set alarm!"));
     // Try again after the minimum wait period.
     delay(min_wait_minutes * kSecondsPerMinute * 1000);
     return;
