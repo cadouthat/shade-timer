@@ -8,6 +8,7 @@
 namespace {
 
 constexpr int kMinutesPerHour = 60;
+constexpr int kMinutesPerDay = kMinutesPerHour * 24;
 
 constexpr uint8_t DS3231_ADDRESS = 0x68;
 constexpr uint8_t DS3231_TIME = 0x00;
@@ -74,6 +75,7 @@ int DS3231RTC::getMinuteOfDay() {
   return minuteOfDay(hour, minute);
 }
 bool DS3231RTC::setMinuteOfDay(int minute_of_day) {
+  minute_of_day = minute_of_day % kMinutesPerDay;
   uint8_t minute = minute_of_day % kMinutesPerHour;
   uint8_t hour = minute_of_day / kMinutesPerHour;
   Wire.beginTransmission(DS3231_ADDRESS);
@@ -105,6 +107,7 @@ int DS3231RTC::getMinuteOfDayAlarm() {
   return minuteOfDay(hour, minute);
 }
 bool DS3231RTC::setMinuteOfDayAlarm(int minute_of_day) {
+  minute_of_day = minute_of_day % kMinutesPerDay;
   uint8_t minute = minute_of_day % kMinutesPerHour;
   uint8_t hour = minute_of_day / kMinutesPerHour;
   Wire.beginTransmission(DS3231_ADDRESS);
