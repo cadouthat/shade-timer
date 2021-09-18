@@ -1,13 +1,19 @@
 #ifndef __EEPROM_WIFI_H
 #define __EEPROM_WIFI_H
 
-constexpr int kSSIDMax = 32;
-constexpr int kPSKMax = 64;
-constexpr int kWiFiConfigSize = (kSSIDMax + kPSKMax);
+#include <Arduino.h>
+#include <EEPROM.h>
+#include <ESP8266WiFi.h>
 
-// Attempts to connect to WiFi from stored credentials.
-// On failure, prompts for new credentials via serial and retries.
-// This function blocks until WiFi configuration/connection is successful.
-void initEEPROMWiFi();
+constexpr int kWiFiSSIDMax = 32;
+constexpr int kWiFiPSKMax = 64;
+constexpr int kWiFiConfigSize = (kWiFiSSIDMax + kWiFiPSKMax);
+
+// Attempts to connect to WiFi from credentials stored in EEPROM.
+bool connectToWiFi(
+    EEPROMClass& = EEPROM, ESP8266WiFiClass& = WiFi, HardwareSerial& = Serial);
+
+// Prompts for new WiFi credentials via serial and stores in EEPROM.
+bool configureWiFi(EEPROMClass& = EEPROM, HardwareSerial& = Serial);
 
 #endif

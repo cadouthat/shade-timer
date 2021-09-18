@@ -103,7 +103,15 @@ void setup() {
   }
 
   EEPROM.begin(kWiFiConfigSize + sizeof(schedule_in_minutes));
-  initEEPROMWiFi();
+  // Block until WiFi is connected.
+  while (!connectToWiFi()) {
+    // Prompt for new configuration via serial.
+    if (!configureWiFi()) {
+      DBGLN(F("WiFi configuration failed!"));
+      delay(1000);
+    }
+  }
+
   // Try to fetch the schedule from our server.
   if (fetchSchedule(schedule_in_minutes, kScheduleMaxEvents)) {
     // Write latest schedule to EEPROM, behind WiFi config.

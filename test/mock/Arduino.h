@@ -1,5 +1,5 @@
-#ifndef __TESTING_ARDUINO_H
-#define __TESTING_ARDUINO_H
+#ifndef __TEST_MOCK_ARDUINO_H
+#define __TEST_MOCK_ARDUINO_H
 
 #include <stdint.h>
 #include <stdlib.h>
