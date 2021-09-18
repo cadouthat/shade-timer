@@ -9,7 +9,6 @@
 #include "gmock-global/gmock-global.h"
 #include "gtest/gtest.h"
 
-MOCK_GLOBAL_FUNC2(digitalWrite, void(int, int));
 MOCK_GLOBAL_FUNC1(delay, void(uint64_t));
 MOCK_GLOBAL_FUNC0(millis, uint64_t());
 
@@ -36,7 +35,6 @@ class EEPROMWiFiTest : public testing::Test {
   }
 
   bool registerMocksAndConnect() {
-    ON_GLOBAL_CALL(digitalWrite, digitalWrite(_, _)).WillByDefault(Return());
     ON_GLOBAL_CALL(millis, millis()).WillByDefault(Invoke([&]() {
       return clock;
     }));
