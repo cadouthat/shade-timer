@@ -86,6 +86,24 @@ TEST_F(DS3231RTCTest, SetsMinuteOfDay) {
     /*Alarm1 flag*/0b1));
 }
 
+TEST_F(DS3231RTCTest, SetsMinuteOfDayWithWrap) {
+  Wire.read_queue.push_back(/*Alarm1|OSF flags*/0b10000001);
+
+  EXPECT_TRUE(rtc.setMinuteOfDay(24*60 + /*11:11*/11*60 + 11));
+  EXPECT_THAT(Wire.write_queue, ElementsAre(
+    /*time reg*/0x00,
+    /*seconds*/0,
+    /*minutes*/0b00010001,
+    /*hours*/0b00010001,
+    /*weekday*/1,
+    /*day of month*/1,
+    /*month*/1,
+    /*year*/0,
+    /*status reg*/0x0F,
+    /*status reg*/0x0F,
+    /*Alarm1 flag*/0b1));
+}
+
 TEST_F(DS3231RTCTest, GetsMinuteOfDayAlarm) {
   Wire.read_queue.push_back(/*seconds*/33);
   Wire.read_queue.push_back(/*minutes*/0b00010001);
@@ -99,6 +117,21 @@ TEST_F(DS3231RTCTest, SetsMinuteOfDayAlarm) {
   Wire.read_queue.push_back(/*Alarm1|OSF flags*/0b10000001);
 
   EXPECT_TRUE(rtc.setMinuteOfDayAlarm(/*11:11*/11*60 + 11));
+  EXPECT_THAT(Wire.write_queue, ElementsAre(
+    /*alarm1 reg*/0x07,
+    /*seconds*/0,
+    /*minutes*/0b00010001,
+    /*hours*/0b00010001,
+    /*day of month*/0b10000000,
+    /*status reg*/0x0F,
+    /*status reg*/0x0F,
+    /*OSF flag*/0b10000000));
+}
+
+TEST_F(DS3231RTCTest, SetsMinuteOfDayAlarmWithWrap) {
+  Wire.read_queue.push_back(/*Alarm1|OSF flags*/0b10000001);
+
+  EXPECT_TRUE(rtc.setMinuteOfDayAlarm(24*60 + /*11:11*/11*60 + 11));
   EXPECT_THAT(Wire.write_queue, ElementsAre(
     /*alarm1 reg*/0x07,
     /*seconds*/0,
