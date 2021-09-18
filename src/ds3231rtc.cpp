@@ -27,12 +27,15 @@ uint8_t BCDToBin(uint8_t bcd) {
   return (bcd >> 4) * 10 + (bcd & 0b1111);
 }
 
-uint8_t read(uint8_t read_register) {
+bool read(uint8_t read_register, uint8_t& value) {
   Wire.beginTransmission(DS3231_ADDRESS);
   Wire.write(read_register);
-  Wire.endTransmission();
-  Wire.requestFrom(DS3231_ADDRESS, 1);
-  return Wire.read();
+  if (Wire.endTransmission() != 0 ||
+      Wire.requestFrom(DS3231_ADDRESS, 1) != 0) {
+    return false;
+  }
+  value = Wire.read();
+  return true;
 }
 
 bool write(uint8_t write_register, uint8_t value) {
@@ -42,12 +45,19 @@ bool write(uint8_t write_register, uint8_t value) {
   return Wire.endTransmission() == 0;
 }
 
-bool getStatusFlag(uint8_t flag) {
-  return read(DS3231_STATUS) & flag;
+bool getStatusFlag(uint8_t flag, bool fail_value) {
+  uint8_t status;
+  if (!read(DS3231_STATUS, status)) {
+    return fail_value;
+  }
+  return status & flag;
 }
 
 bool clearStatusFlag(uint8_t flag) {
-  uint8_t status = read(DS3231_STATUS);
+  uint8_t status;
+  if (!read(DS3231_STATUS, status)) {
+    return false;
+  }
   return write(DS3231_STATUS, status & ~flag);
 }
 
@@ -62,13 +72,15 @@ void DS3231RTC::begin() {
 }
 
 bool DS3231RTC::isTimeValid() {
-  return !getStatusFlag(DS3231_OSF_FLAG);
+  return !getStatusFlag(DS3231_OSF_FLAG, /*fail_value=*/true);
 }
 int DS3231RTC::getMinuteOfDay() {
   Wire.beginTransmission(DS3231_ADDRESS);
   Wire.write(DS3231_TIME);
-  Wire.endTransmission();
-  Wire.requestFrom(DS3231_ADDRESS, 3);
+  if (Wire.endTransmission() != 0 ||
+      Wire.requestFrom(DS3231_ADDRESS, 3) != 0) {
+    return 0;
+  }
   Wire.read(); // Ignore seconds.
   uint8_t minute = BCDToBin(Wire.read());
   uint8_t hour = BCDToBin(Wire.read());
@@ -94,13 +106,15 @@ bool DS3231RTC::setMinuteOfDay(int minute_of_day) {
 }
 
 bool DS3231RTC::isAlarmActive() {
-  return getStatusFlag(DS3231_ALARM1_FLAG);
+  return getStatusFlag(DS3231_ALARM1_FLAG, /*fail_value=*/true);
 }
 int DS3231RTC::getMinuteOfDayAlarm() {
   Wire.beginTransmission(DS3231_ADDRESS);
   Wire.write(DS3231_ALARM1);
-  Wire.endTransmission();
-  Wire.requestFrom(DS3231_ADDRESS, 3);
+  if (Wire.endTransmission() != 0 ||
+      Wire.requestFrom(DS3231_ADDRESS, 3) != 0) {
+    return 0;
+  }
   Wire.read(); // Ignore seconds.
   uint8_t minute = BCDToBin(Wire.read());
   uint8_t hour = BCDToBin(Wire.read());
