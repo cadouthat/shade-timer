@@ -123,7 +123,7 @@ void loop() {
   int wait_minutes = processSchedule(
     schedule_in_minutes, kScheduleMaxEvents, minute_of_day,
     kScheduleTriggerDeltaMinutes, toggleShade);
-  if (wait_minutes > kMaxWaitMinutes) {
+  if (wait_minutes == 0 || wait_minutes > kMaxWaitMinutes) {
     wait_minutes = kMaxWaitMinutes;
   }
 

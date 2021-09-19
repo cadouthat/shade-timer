@@ -34,7 +34,7 @@ int processSchedule(
     uint16_t* schedule_in_minutes, size_t schedule_size, int minute_of_day,
     int trigger_delta_minutes, std::function<void()> trigger_callback) {
   int wait_minutes = 0;
-  int min_wait_minutes = 1;
+  int min_wait_minutes = 0;
   for (int i = 0; i < schedule_size; i++) {
     // If the schedule is not full, remaining slots are kScheduleNoEvent.
     if (schedule_in_minutes[i] == kScheduleNoEvent) {

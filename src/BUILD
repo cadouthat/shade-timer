@@ -32,3 +32,12 @@ cc_library(
     "//test/mock:WiFiClient",
   ],
 )
+cc_library(
+  name = "schedule-util",
+  testonly = True,
+  srcs = ["schedule-util.cpp"],
+  hdrs = ["schedule-util.h"],
+  deps = [
+    "//test/mock:Arduino",
+  ],
+)

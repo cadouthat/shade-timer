@@ -30,3 +30,13 @@ cc_test(
     "@gtest//:gtest_main",
   ],
 )
+cc_test(
+  name = "schedule-util-test",
+  srcs = ["schedule-util-test.cpp"],
+  deps = [
+    "//src:schedule-util",
+    "//test/mock:Arduino",
+    "@gtest//:gtest",
+    "@gtest//:gtest_main",
+  ],
+)
