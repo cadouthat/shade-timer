@@ -23,7 +23,6 @@ constexpr uint32_t kSecondsPerMinute = 60;
 constexpr uint32_t kSecondsPerDay = kSecondsPerMinute * 60 * 24;
 constexpr uint32_t kMicros = 1e6;
 
-constexpr size_t kScheduleMaxEvents = 2;
 constexpr int kScheduleTriggerDeltaMinutes = 5;
 // Only go into deep sleep for short durations, to retain accuracy.
 constexpr int kMaxDeepSleepMinutes = 15;
@@ -33,6 +32,7 @@ constexpr int kMaxWaitMinutes = 240;
 WiFiUDP ntpUDP;
 NTPClient ntp(ntpUDP);
 DS3231RTC rtc;
+constexpr size_t kScheduleMaxEvents = 2;
 uint16_t schedule_in_minutes[kScheduleMaxEvents] = {0};
 
 void toggleShade() {
@@ -43,9 +43,8 @@ void toggleShade() {
 }
 
 void deepSleepMinutes(uint64_t minutes) {
-  DBG(F("Going into deepSleep() for "));
-  DBG(minutes);
-  DBGLN(F(" minutes"));
+  DBG(F("Going into deepSleep() for minutes "));
+  DBGLN(minutes);
   ESP.deepSleep(minutes * kSecondsPerMinute * kMicros);
 }
 
@@ -68,9 +67,9 @@ void setup() {
 
   Serial.begin(SERIAL_BAUD);
   delay(500);
-  DBGLN();
-  DBGLN(F("Awake"));
+  DBGLN(F("\nAwake"));
 
+  // Go back into deep sleep if we are still waiting for an alarm on the RTC.
   if (rtc.isTimeValid() && !rtc.isAlarmActive()) {
     if (int minutes =
           minutesUntil(rtc.getMinuteOfDayAlarm(), rtc.getMinuteOfDay());
@@ -135,6 +134,5 @@ void loop() {
     delay((uint32_t)wait_minutes * kSecondsPerMinute * 1000);
     return;
   }
-  // Sleep as long as possible, or until the countdown ends.
   deepSleepMinutes(min(wait_minutes, kMaxDeepSleepMinutes));
 }
