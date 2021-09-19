@@ -10,6 +10,8 @@
 #define max(a, b) ((a) > (b) ? (a) : (b))
 #define bit(x) (1 << (x))
 #define F(str) str
+#define PROGMEM
+#define FPSTR(str) String(str)
 #define LED_BUILTIN 99
 #define LOW 88
 #define HIGH 77
@@ -26,16 +28,16 @@ class FakeString {
   FakeString() : c_str_("") {}
   FakeString(const char* c_str) : c_str_(c_str) {}
 
-  size_t length() {
+  size_t length() const {
     return strlen(c_str_);
   }
-  const char* c_str() {
+  const char* c_str() const {
     return c_str_;
   }
-  bool equals(const char* str) {
+  bool equals(const char* str) const {
     return !strcmp(c_str_, str);
   }
-  int toInt() {
+  int toInt() const {
     return atoi(c_str_);
   }
 

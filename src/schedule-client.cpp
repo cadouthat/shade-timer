@@ -3,6 +3,7 @@
 #include <string.h>
 #include <stdio.h>
 
+#include <Arduino.h>
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 
@@ -11,9 +12,8 @@ constexpr PROGMEM char kUrl[] = "http://cadouthat.duckdns.org/shade-timer.txt";
 constexpr int kMinutesPerHour = 60;
 } // namespace
 
-bool fetchSchedule(uint16_t* output_minutes, int size) {
+bool fetchSchedule(HTTPClient& http, uint16_t* output_minutes, int size) {
   WiFiClient wifi;
-  HTTPClient http;
   if (!http.begin(wifi, FPSTR(kUrl))) {
     Serial.println(F("fetchSchedule connection failed"));
     return false;
@@ -51,4 +51,9 @@ bool fetchSchedule(uint16_t* output_minutes, int size) {
     output_minutes[count] = kScheduleNoEvent;
   }
   return true;
+}
+
+bool fetchSchedule(uint16_t* output_minutes, int size) {
+  HTTPClient http;
+  return fetchSchedule(http, output_minutes, size);
 }

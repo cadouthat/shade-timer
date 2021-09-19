@@ -20,3 +20,13 @@ cc_test(
     "@gtest//:gtest_main",
   ],
 )
+cc_test(
+  name = "schedule-client-test",
+  srcs = ["schedule-client-test.cpp"],
+  deps = [
+    "//src:schedule-client",
+    "//test/mock:Arduino",
+    "@gtest//:gtest",
+    "@gtest//:gtest_main",
+  ],
+)

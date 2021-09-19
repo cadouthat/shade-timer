@@ -21,3 +21,14 @@ cc_library(
     "//test/mock:ESP8266WiFi",
   ],
 )
+cc_library(
+  name = "schedule-client",
+  testonly = True,
+  srcs = ["schedule-client.cpp"],
+  hdrs = ["schedule-client.h"],
+  deps = [
+    "//test/mock:Arduino",
+    "//test/mock:ESP8266HTTPClient",
+    "//test/mock:WiFiClient",
+  ],
+)

@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+#include <ESP8266HTTPClient.h>
+
 constexpr uint16_t kScheduleNoEvent = 0xFFFF;
 
 // Fetches the event schedule from a hardcoded URL and populates the provided
@@ -12,5 +14,6 @@ constexpr uint16_t kScheduleNoEvent = 0xFFFF;
 // Returns true on success, and false in the event that the schedule could not
 // be fetched or parsed.
 bool fetchSchedule(uint16_t* output_minutes, int size);
+bool fetchSchedule(HTTPClient& http, uint16_t* output_minutes, int size);
 
 #endif
