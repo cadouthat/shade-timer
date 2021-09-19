@@ -3,7 +3,7 @@
 #include <functional>
 #include <stdint.h>
 
-#include "schedule-client.h"
+#include <Arduino.h>
 
 namespace {
 constexpr int kMinutesPerDay = 60 * 24;

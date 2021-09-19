@@ -5,7 +5,7 @@
 
 #include <ESP8266HTTPClient.h>
 
-constexpr uint16_t kScheduleNoEvent = 0xFFFF;
+#include "schedule-util.h"
 
 // Fetches the event schedule from a hardcoded URL and populates the provided
 // array with event times, up to size.

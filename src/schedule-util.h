@@ -4,6 +4,8 @@
 #include <functional>
 #include <stdint.h>
 
+constexpr uint16_t kScheduleNoEvent = 0xFFFF;
+
 // Returns minute duration until the target time of day in the future, wrapping
 // to the next day if needed.
 int minutesUntil(int target_minute, int current_minute);
