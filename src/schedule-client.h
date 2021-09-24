@@ -5,8 +5,6 @@
 
 #include <ESP8266HTTPClient.h>
 
-#include "schedule-util.h"
-
 // Fetches the event schedule from a hardcoded URL and populates the provided
 // array with event times, up to size.
 // If there are fewer events than size, a value of kScheduleNoEvent will be

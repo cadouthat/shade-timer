@@ -9,22 +9,11 @@ cc_test(
   ],
 )
 cc_test(
-  name = "eeprom-wifi-test",
-  srcs = ["eeprom-wifi-test.cpp"],
-  deps = [
-    "//src:eeprom-wifi",
-    "//test/mock:EEPROM",
-    "//test/mock:ESP8266WiFi",
-    "@gmock-global//:gmock-global",
-    "@gtest//:gtest",
-    "@gtest//:gtest_main",
-  ],
-)
-cc_test(
   name = "schedule-client-test",
   srcs = ["schedule-client-test.cpp"],
   deps = [
     "//src:schedule-client",
+    "//src:schedule-util",
     "//test/mock:Arduino",
     "@gtest//:gtest",
     "@gtest//:gtest_main",

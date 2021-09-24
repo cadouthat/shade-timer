@@ -1,8 +1,8 @@
 #include <EEPROM.h>
 #include <NTPClient.h>
 #include <WiFiUdp.h>
+#include <eeprom-wifi.h>
 
-#include "src/eeprom-wifi.h"
 #include "src/ds3231rtc.h"
 #include "src/schedule-client.h"
 #include "src/schedule-util.h"

@@ -7,6 +7,8 @@
 #include <ESP8266HTTPClient.h>
 #include <WiFiClient.h>
 
+#include "schedule-util.h"
+
 namespace {
 constexpr PROGMEM char kUrl[] = "http://cadouthat.duckdns.org/shade-timer.txt";
 constexpr int kMinutesPerHour = 60;
