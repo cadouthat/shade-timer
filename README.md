@@ -9,7 +9,7 @@ as possible, with an external RTC for accurate wake timing.
 * Roller shade capable of opening/closing with a single toggle
 
 # Environment
-* Arduino IDE for build/upload
+* Arduino IDE for target device build/upload
 * Bazel for running unit tests
 
 # Related Links
