@@ -46,15 +46,10 @@ class FakeString {
 };
 typedef FakeString String;
 
-class MockSerial {
+class FakeSerial {
  public:
-  MOCK_METHOD1(print, void(const char* str));
-  MOCK_METHOD1(print, void(String str));
-  MOCK_METHOD1(println, void(const char* str));
-  MOCK_METHOD1(setTimeout, void(unsigned int ms));
-  MOCK_METHOD0(readString, String());
+  void println(const char* str) {}
 };
-typedef MockSerial HardwareSerial;
-extern HardwareSerial Serial;
+extern FakeSerial Serial;
 
 #endif

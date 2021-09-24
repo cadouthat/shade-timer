@@ -3,8 +3,9 @@
 #include "Arduino.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
+#include "src/schedule-util.h"
 
-MockSerial Serial;
+FakeSerial Serial;
 
 namespace {
 
